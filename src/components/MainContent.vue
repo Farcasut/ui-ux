@@ -106,7 +106,7 @@
       <div class="px-6 pt-6 pb-4 shrink-0">
         <div class="flex items-start justify-between gap-4 mb-1">
           <h1 class="text-2xl font-black">Lista: {{ activeList }}</h1>
-          <button class="tag-btn px-4 mt-1 shrink-0" style="height: 34px;">Partajeaza</button>
+          <button class="tag-btn px-4 mt-1 shrink-0" style="height: 34px;" @click="$emit('open-share-modal', activeList)">Partajeaza</button>
         </div>
         <p class="text-xs text-gray-500">
           Owner: Mihai &nbsp;·&nbsp; {{ allListTasks.length }} task-uri &nbsp;·&nbsp; {{ doneListCount }} finalizate
@@ -186,7 +186,7 @@ export default {
   name: 'MainContent',
   emits: [
     'update:search-query', 'update:active-filter',
-    'select-task', 'open-add-modal', 'open-edit-modal',
+    'select-task', 'open-add-modal', 'open-edit-modal', 'open-share-modal',
     'toggle-task', 'update-task', 'delete-task',
   ],
   props: {

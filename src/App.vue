@@ -21,6 +21,7 @@
       @select-task="selectedTaskId = $event"
       @open-add-modal="openAddModal"
       @open-edit-modal="openEditModal"
+      @open-share-modal="openShareModal"
       @toggle-task="toggleTask"
       @update-task="updateTask"
       @delete-task="deleteTask"
@@ -40,6 +41,13 @@
       @save="saveModalTask"
       @close="showModal = false"
     />
+    <ShareModal
+      v-if="showShareModal"
+      :list-name="shareModalList"
+      :collaborators="shareData[shareModalList] || []"
+      @update-collaborators="updateShareCollaborators"
+      @close="showShareModal = false"
+    />
   </div>
 </template>
 
@@ -48,6 +56,7 @@ import LeftSidebar from './components/LeftSidebar.vue'
 import MainContent from './components/MainContent.vue'
 import RightSidebar from './components/RightSidebar.vue'
 import TaskModal from './components/TaskModal.vue'
+import ShareModal from './components/ShareModal.vue'
 
 const TASKS_KEY = 'doer-tasks-v2'
 const LISTS_KEY = 'doer-lists-v2'
@@ -73,7 +82,7 @@ const DEFAULT_TASKS = [
 
 export default {
   name: 'App',
-  components: { LeftSidebar, MainContent, RightSidebar, TaskModal },
+  components: { LeftSidebar, MainContent, RightSidebar, TaskModal, ShareModal },
 
   data() {
     const savedTasks = localStorage.getItem(TASKS_KEY)
@@ -88,6 +97,16 @@ export default {
       selectedTaskId: null,
       showModal:     false,
       modalTask:     null,
+      showShareModal:  false,
+      shareModalList:  null,
+      shareData: {
+        Facultate: [
+          { email: 'mihai@email.com', role: 'Owner',       permission: 'write' },
+          { email: 'ana@email.com',   role: 'Colaborator', permission: 'read-only' },
+          { email: 'alex@email.com',  role: 'Colaborator', permission: 'write' },
+          { email: 'ioana@email.com', role: 'Colaborator', permission: 'read-only' },
+        ],
+      },
     }
   },
 
@@ -173,6 +192,16 @@ export default {
     addList(name) {
       const trimmed = name.trim()
       if (trimmed && !this.lists.includes(trimmed)) this.lists.push(trimmed)
+    },
+    openShareModal(listName) {
+      if (!this.shareData[listName]) {
+        this.shareData[listName] = [{ email: 'mihai@email.com', role: 'Owner', permission: 'write-and-share' }]
+      }
+      this.shareModalList = listName
+      this.showShareModal = true
+    },
+    updateShareCollaborators(collaborators) {
+      this.shareData[this.shareModalList] = collaborators
     },
   },
 }
