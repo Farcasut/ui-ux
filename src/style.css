@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+/* ── Design tokens ─────────────────────────────────────────── */
+@theme {
+  --color-app-bg:           #CACACA;
+  --color-surface:          #D9D9D9;
+  --color-surface-selected: #BEBEBE;
+}
+
+/* ── Reusable component classes ────────────────────────────── */
+@layer components {
+
+  /* Sidebar shell (left + right panels) */
+  .sidebar {
+    @apply h-full flex flex-col overflow-hidden;
+    width: 285px;
+    min-width: 285px;
+    background: var(--color-surface);
+  }
+
+  /* Horizontal divider inside sidebars */
+  .sidebar-divider {
+    @apply mx-4 border-t border-black shrink-0;
+  }
+
+  /* "TODAY", "LIST", "UPCOMING" headings */
+  .section-label {
+    @apply text-[10px] font-bold uppercase tracking-widest text-gray-500;
+  }
+
+  /* Sidebar nav row (list items, schedule items) */
+  .nav-item {
+    @apply flex items-center gap-3 px-2 py-1.5 rounded cursor-pointer text-sm select-none hover:bg-white/50;
+  }
+  .nav-item.is-active {
+    @apply bg-white;
+  }
+
+  /* Pill-shaped task / toolbar row */
+  .task-row {
+    @apply flex items-center gap-3 px-4 cursor-pointer;
+    min-height: 52px;
+    border-radius: 25px;
+    background: var(--color-surface);
+  }
+  .task-row.is-selected {
+    background: var(--color-surface-selected);
+  }
+
+  /* Square checkbox on task rows */
+  .task-checkbox {
+    @apply border border-black rounded flex items-center justify-center cursor-pointer transition-colors shrink-0;
+    width: 26px;
+    height: 24px;
+    background: var(--color-surface);
+  }
+  .task-checkbox:hover {
+    @apply bg-gray-300;
+  }
+  .task-checkbox.is-done {
+    @apply bg-black border-black;
+  }
+  .task-checkbox.is-done:hover {
+    @apply bg-gray-800;
+  }
+
+  /* Small tag / priority / list button */
+  .tag-btn {
+    @apply inline-flex items-center justify-center text-xs px-2 border border-black cursor-pointer outline-none shrink-0 transition-colors;
+    height: 32px;
+    min-width: 36px;
+    border-radius: 9px;
+    background: var(--color-surface);
+  }
+  .tag-btn.is-priority {
+    @apply bg-black text-white border-black;
+  }
+  .tag-btn.is-active {
+    @apply bg-black text-white border-black;
+  }
+
+  /* Priority filter chip (ALL / P1 / P2 …) */
+  .filter-chip {
+    @apply px-3 py-1.5 text-xs font-semibold border-0 outline-none cursor-pointer transition-colors;
+    border-radius: 10px;
+    background: var(--color-surface);
+  }
+  .filter-chip:hover {
+    background: var(--color-surface-selected);
+  }
+  .filter-chip.is-active {
+    @apply bg-black text-white;
+  }
+
+  /* Stat summary card */
+  .stat-card {
+    @apply rounded-[14px] border border-black px-4 py-3 flex flex-col gap-1;
+    background: var(--color-app-bg);
+  }
+}
