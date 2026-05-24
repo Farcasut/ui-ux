@@ -1,12 +1,13 @@
 <template>
   <div class="flex h-screen overflow-hidden" style="background: #CACACA;">
     <LeftSidebar
-      :lists="lists"
-      :shared-lists="sharedLists"
+      :lists="personalLists"
+      :shared-lists="allSharedLists"
       :tasks="tasks"
       :active-list="activeList"
       @select-list="selectList"
       @add-list="addList"
+      @delete-list="deleteList"
     />
     <MainContent
       :tasks="filteredTasks"
@@ -16,6 +17,8 @@
       :selected-task-id="selectedTaskId"
       :search-query="searchQuery"
       :active-filter="activeFilter"
+      :is-shared="activeListIsShared"
+      :shared-list-names="allSharedListNames"
       @update:search-query="searchQuery = $event"
       @update:active-filter="activeFilter = $event"
       @select-task="selectedTaskId = $event"
@@ -28,16 +31,21 @@
     />
     <RightSidebar
       :tasks="tasks"
+      :view-tasks="filteredTasks"
       :completed-count="completedCount"
       :active-list="activeList"
       :selected-task="selectedTask"
+      :is-shared="activeListIsShared"
       @update-task="updateTask"
       @open-edit-modal="openEditModal"
+      @clear-selection="selectedTaskId = null"
     />
     <TaskModal
       v-if="showModal"
       :task="modalTask"
       :lists="allListNames"
+      :shared-list-names="allSharedListNames"
+      :share-data="shareData"
       @save="saveModalTask"
       @close="showModal = false"
     />
@@ -62,22 +70,22 @@ const TASKS_KEY = 'doer-tasks-v2'
 const LISTS_KEY = 'doer-lists-v2'
 
 const DEFAULT_LISTS = ['Munca', 'Facultate', 'Personal']
-const DEFAULT_SHARED_LISTS = ['Cumparaturi', 'UI/UX Project', 'Treburi']
+const BUILTIN_SHARED_LISTS = ['Cumparaturi', 'UI/UX Project', 'Treburi']
 
+const CURRENT_USER = 'Mihai'
 const today = new Date().toISOString().slice(0, 10)
-const nextDay = d => { const dt = new Date(d); dt.setDate(dt.getDate() + 1); return dt.toISOString().slice(0, 10) }
 const inDays = n => { const dt = new Date(); dt.setDate(dt.getDate() + n); return dt.toISOString().slice(0, 10) }
 
 const DEFAULT_TASKS = [
-  { id: '1', title: 'Finalizare wireframes',    deadline: today,       time: '18:00', priority: 'P1', list: 'Facultate', done: false, assignee: 'Mihai',  reminder: 'Cu 2 ore inainte', notes: '', tags: [] },
-  { id: '2', title: 'Trimite documentatia',     deadline: today,       time: '22:00', priority: 'P1', list: 'Facultate', done: false, assignee: 'Andrei', reminder: '',                 notes: '', tags: [] },
-  { id: '3', title: 'Corecteaza user stories',  deadline: today,       time: '',      priority: 'P2', list: 'Facultate', done: true,  assignee: 'Alex',   reminder: '',                 notes: '', tags: [] },
-  { id: '4', title: 'Pregateste prezentarea',   deadline: inDays(5),   time: '',      priority: 'P2', list: 'Facultate', done: false, assignee: 'Fabian', reminder: '',                 notes: '', tags: [] },
-  { id: '5', title: 'Revizuire finala',         deadline: inDays(6),   time: '',      priority: 'P3', list: 'Facultate', done: false, assignee: 'echipa', reminder: '',                 notes: '', tags: [] },
-  { id: '6', title: 'Review PR',                deadline: today,       time: '19:30', priority: 'P1', list: 'Munca',     done: false, assignee: 'Mihai',  reminder: '',                 notes: '', tags: [] },
-  { id: '7', title: 'Send email',               deadline: today,       time: '20:00', priority: 'P2', list: 'Munca',     done: false, assignee: 'Mihai',  reminder: '',                 notes: '', tags: [] },
-  { id: '8', title: 'Doctor Appointment',       deadline: inDays(1),   time: '07:25', priority: 'P2', list: 'Personal',  done: false, assignee: 'Mihai',  reminder: 'Cu 1 ora inainte', notes: '', tags: [] },
-  { id: '9', title: 'Cumparaturi saptamanale',  deadline: inDays(2),   time: '',      priority: 'P3', list: 'Cumparaturi', done: false, assignee: 'Mihai', reminder: '',                notes: '', tags: [] },
+  { id: '1', title: 'Finalizare wireframes',    deadline: today,       time: '18:00', priority: 'P1', list: 'Facultate',   done: false, assignee: 'Mihai',  reminder: 'Cu 2 ore inainte', notes: '', tags: [] },
+  { id: '2', title: 'Trimite documentatia',     deadline: today,       time: '22:00', priority: 'P1', list: 'Facultate',   done: false, assignee: 'Andrei', reminder: '',                 notes: '', tags: [] },
+  { id: '3', title: 'Corecteaza user stories',  deadline: today,       time: '',      priority: 'P2', list: 'Facultate',   done: true,  assignee: 'Alex',   reminder: '',                 notes: '', tags: [] },
+  { id: '4', title: 'Pregateste prezentarea',   deadline: inDays(5),   time: '',      priority: 'P2', list: 'Facultate',   done: false, assignee: 'Fabian', reminder: '',                 notes: '', tags: [] },
+  { id: '5', title: 'Revizuire finala',         deadline: inDays(6),   time: '',      priority: 'P3', list: 'Facultate',   done: false, assignee: 'echipa', reminder: '',                 notes: '', tags: [] },
+  { id: '6', title: 'Review PR',                deadline: today,       time: '19:30', priority: 'P1', list: 'Munca',       done: false, assignee: 'Mihai',  reminder: '',                 notes: '', tags: [] },
+  { id: '7', title: 'Send email',               deadline: today,       time: '20:00', priority: 'P2', list: 'Munca',       done: false, assignee: 'Mihai',  reminder: '',                 notes: '', tags: [] },
+  { id: '8', title: 'Doctor Appointment',       deadline: inDays(1),   time: '07:25', priority: 'P2', list: 'Personal',    done: false, assignee: 'Mihai',  reminder: 'Cu 1 ora inainte', notes: '', tags: [] },
+  { id: '9', title: 'Cumparaturi saptamanale',  deadline: inDays(2),   time: '',      priority: 'P3', list: 'Cumparaturi', done: false, assignee: 'Mihai',  reminder: '',                 notes: '', tags: [] },
 ]
 
 export default {
@@ -88,23 +96,31 @@ export default {
     const savedTasks = localStorage.getItem(TASKS_KEY)
     const savedLists = localStorage.getItem(LISTS_KEY)
     return {
-      tasks:         savedTasks ? JSON.parse(savedTasks) : DEFAULT_TASKS,
-      lists:         savedLists ? JSON.parse(savedLists) : DEFAULT_LISTS,
-      sharedLists:   DEFAULT_SHARED_LISTS,
-      searchQuery:   '',
-      activeFilter:  'ALL',
-      activeList:    'Azi',
+      tasks:          savedTasks ? JSON.parse(savedTasks) : DEFAULT_TASKS,
+      lists:          savedLists ? JSON.parse(savedLists) : DEFAULT_LISTS,
+      searchQuery:    '',
+      activeFilter:   'ALL',
+      activeList:     'Azi',
       selectedTaskId: null,
-      showModal:     false,
-      modalTask:     null,
-      showShareModal:  false,
-      shareModalList:  null,
+      showModal:      false,
+      modalTask:      null,
+      showShareModal: false,
+      shareModalList: null,
       shareData: {
-        Facultate: [
-          { email: 'mihai@email.com', role: 'Owner',       permission: 'write' },
-          { email: 'ana@email.com',   role: 'Colaborator', permission: 'read-only' },
-          { email: 'alex@email.com',  role: 'Colaborator', permission: 'write' },
-          { email: 'ioana@email.com', role: 'Colaborator', permission: 'read-only' },
+        Cumparaturi: [
+          { email: 'mihai@email.com',  role: 'Owner',       permission: 'write-and-share' },
+          { email: 'alex@email.com',   role: 'Colaborator', permission: 'write' },
+          { email: 'andrei@email.com', role: 'Colaborator', permission: 'write' },
+        ],
+        'UI/UX Project': [
+          { email: 'mihai@email.com',  role: 'Owner',       permission: 'write-and-share' },
+          { email: 'alex@email.com',   role: 'Colaborator', permission: 'write' },
+          { email: 'andrei@email.com', role: 'Colaborator', permission: 'write' },
+        ],
+        Treburi: [
+          { email: 'mihai@email.com',  role: 'Owner',       permission: 'write-and-share' },
+          { email: 'alex@email.com',   role: 'Colaborator', permission: 'write' },
+          { email: 'andrei@email.com', role: 'Colaborator', permission: 'write' },
         ],
       },
     }
@@ -114,18 +130,44 @@ export default {
     todayStr() {
       return new Date().toISOString().slice(0, 10)
     },
+    // Lists that have been shared (have at least 1 collaborator beyond the owner)
+    sharedUserLists() {
+      return this.lists.filter(l => (this.shareData[l] || []).length > 1)
+    },
+    // User-created lists that are still personal (no collaborators yet)
+    personalLists() {
+      return this.lists.filter(l => !this.sharedUserLists.includes(l))
+    },
+    // All lists shown in "Liste partajate": built-ins + any user list that got shared
+    allSharedLists() {
+      return [...BUILTIN_SHARED_LISTS, ...this.sharedUserLists]
+    },
+    // Flat array of shared list names — passed to TaskModal
+    allSharedListNames() {
+      return this.allSharedLists
+    },
+    // All list names for dropdowns
     allListNames() {
-      return [...this.lists, ...this.sharedLists]
+      return [...this.lists, ...BUILTIN_SHARED_LISTS]
+    },
+    activeListIsShared() {
+      return this.allSharedLists.includes(this.activeList)
     },
     filteredTasks() {
       return this.tasks.filter(task => {
-        const matchesList = this.activeList === 'Azi'
-          ? (task.deadline === this.todayStr || (task.deadline < this.todayStr && !task.done))
-          : task.list === this.activeList
+        if (this.activeList === 'Azi') {
+          const isToday = task.deadline === this.todayStr || (task.deadline < this.todayStr && !task.done)
+          if (!isToday) return false
+          // On shared lists, only show tasks assigned to me or unassigned
+          const isSharedList = this.allSharedLists.includes(task.list)
+          if (isSharedList && task.assignee && task.assignee !== CURRENT_USER) return false
+        } else {
+          if (task.list !== this.activeList) return false
+        }
         const matchesPriority = this.activeFilter === 'ALL' || task.priority === this.activeFilter
         const q = this.searchQuery.toLowerCase()
         const matchesSearch = !q || task.title.toLowerCase().includes(q) || (task.list || '').toLowerCase().includes(q)
-        return matchesList && matchesPriority && matchesSearch
+        return matchesPriority && matchesSearch
       })
     },
     completedCount() {
@@ -192,6 +234,12 @@ export default {
     addList(name) {
       const trimmed = name.trim()
       if (trimmed && !this.lists.includes(trimmed)) this.lists.push(trimmed)
+    },
+    deleteList(name) {
+      this.lists = this.lists.filter(l => l !== name)
+      this.tasks = this.tasks.filter(t => t.list !== name)
+      delete this.shareData[name]
+      if (this.activeList === name) this.activeList = 'Azi'
     },
     openShareModal(listName) {
       if (!this.shareData[listName]) {

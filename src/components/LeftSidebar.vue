@@ -68,12 +68,18 @@
       <div
         v-for="list in lists"
         :key="list"
-        :class="['nav-item', { 'is-active': activeList === list }]"
+        :class="['nav-item group/list', { 'is-active': activeList === list }]"
         @click="$emit('select-list', list)"
       >
         <span class="w-2 h-2 rounded-full shrink-0" :class="activeList === list ? 'bg-white' : 'bg-gray-400'"></span>
         <span class="flex-1 truncate">{{ list }}</span>
-        <span v-if="listCount(list)" class="text-[10px]" :class="activeList === list ? 'text-white/70' : 'text-gray-400'">{{ listCount(list) }}</span>
+        <span v-if="listCount(list)" class="text-[10px] group-hover/list:hidden" :class="activeList === list ? 'text-white/70' : 'text-gray-400'">{{ listCount(list) }}</span>
+        <button
+          class="hidden group-hover/list:flex w-4 h-4 items-center justify-center rounded cursor-pointer border-0 bg-transparent shrink-0 transition-colors"
+          :class="activeList === list ? 'text-white/60 hover:text-white' : 'text-gray-400 hover:text-red-500'"
+          title="Sterge lista"
+          @click.stop="confirmDeleteList = list"
+        >×</button>
       </div>
     </div>
 
@@ -87,13 +93,45 @@
       <div
         v-for="list in sharedLists"
         :key="list"
-        :class="['nav-item', { 'is-active': activeList === list }]"
+        :class="['nav-item group/list', { 'is-active': activeList === list }]"
         @click="$emit('select-list', list)"
       >
         <svg class="w-3.5 h-3.5 shrink-0" :class="activeList === list ? 'text-white' : 'text-gray-400'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
         <span class="flex-1 truncate">{{ list }}</span>
+        <button
+          class="hidden group-hover/list:flex w-4 h-4 items-center justify-center rounded cursor-pointer border-0 bg-transparent shrink-0 transition-colors"
+          :class="activeList === list ? 'text-white/60 hover:text-white' : 'text-gray-400 hover:text-red-500'"
+          title="Sterge lista"
+          @click.stop="confirmDeleteList = list"
+        >×</button>
+      </div>
+    </div>
+
+    <!-- Confirm delete modal -->
+    <div
+      v-if="confirmDeleteList"
+      class="fixed inset-0 z-50 flex items-center justify-center p-6"
+      style="background: rgba(0,0,0,0.4);"
+      @click.self="confirmDeleteList = null"
+    >
+      <div class="w-full max-w-sm rounded-2xl shadow-2xl border border-black/10 p-6" style="background: var(--color-surface);">
+        <h3 class="text-lg font-black mb-2">Sterge lista?</h3>
+        <p class="text-sm text-gray-600 mb-5">
+          Ești sigur că vrei să ștergi lista <strong>{{ confirmDeleteList }}</strong>?
+          Toate task-urile din această listă vor fi șterse definitiv.
+        </p>
+        <div class="flex gap-3 justify-end">
+          <button
+            class="px-5 py-2 rounded-xl border border-black text-sm font-semibold bg-transparent cursor-pointer hover:bg-black/5 transition-colors"
+            @click="confirmDeleteList = null"
+          >Anuleaza</button>
+          <button
+            class="px-5 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold cursor-pointer border-0 hover:bg-red-700 transition-colors"
+            @click="confirmDelete"
+          >Sterge</button>
+        </div>
       </div>
     </div>
   </aside>
@@ -102,7 +140,7 @@
 <script>
 export default {
   name: 'LeftSidebar',
-  emits: ['select-list', 'add-list'],
+  emits: ['select-list', 'add-list', 'delete-list'],
   props: {
     activeList:  { type: String, default: 'Azi' },
     lists:       { type: Array,  default: () => [] },
@@ -110,7 +148,11 @@ export default {
     tasks:       { type: Array,  default: () => [] },
   },
   data() {
-    return { showNewList: false, newListName: '' }
+    return {
+      showNewList:       false,
+      newListName:       '',
+      confirmDeleteList: null,
+    }
   },
   computed: {
     todayCount() {
@@ -121,6 +163,10 @@ export default {
   methods: {
     listCount(name) {
       return this.tasks.filter(t => t.list === name && !t.done).length || ''
+    },
+    confirmDelete() {
+      this.$emit('delete-list', this.confirmDeleteList)
+      this.confirmDeleteList = null
     },
     submitNewList() {
       if (this.newListName.trim()) {

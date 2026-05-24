@@ -71,15 +71,13 @@
           </div>
         </div>
 
-        <!-- Responsabil -->
-        <div>
+        <!-- Responsabil — only for shared lists -->
+        <div v-if="isShared">
           <label class="modal-label">Responsabil</label>
-          <input
-            v-model="form.assignee"
-            type="text"
-            placeholder="Eu / membru din lista"
-            class="modal-input"
-          />
+          <select v-model="form.assignee" class="modal-input cursor-pointer">
+            <option value="">Neatribuit</option>
+            <option v-for="member in listMembers" :key="member" :value="member">{{ member }}</option>
+          </select>
         </div>
 
         <!-- Note -->
@@ -115,8 +113,10 @@ export default {
   name: 'TaskModal',
   emits: ['save', 'close'],
   props: {
-    task:  { type: Object, default: null },
-    lists: { type: Array,  default: () => [] },
+    task:            { type: Object, default: null },
+    lists:           { type: Array,  default: () => [] },
+    sharedListNames: { type: Array,  default: () => [] },
+    shareData:       { type: Object, default: () => ({}) },
   },
   data() {
     const today = new Date().toISOString().slice(0, 10)
@@ -132,6 +132,18 @@ export default {
   },
   mounted() {
     this.$nextTick(() => this.$refs.titleInput?.focus())
+  },
+  computed: {
+    isShared() {
+      return this.sharedListNames.includes(this.form.list)
+    },
+    listMembers() {
+      const collaborators = (this.shareData || {})[this.form.list] || []
+      return collaborators.map(c => {
+        const name = c.email.split('@')[0]
+        return name.charAt(0).toUpperCase() + name.slice(1)
+      })
+    },
   },
   methods: {
     save() {

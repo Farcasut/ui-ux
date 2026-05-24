@@ -1,10 +1,15 @@
 <template>
-  <aside class="sidebar overflow-hidden flex flex-col">
+  <aside class="sidebar overflow-hidden flex flex-col" @click.self="$emit('clear-selection')">
 
-    <!-- ── TASK DETAIL (List view + task selected) ── -->
-    <template v-if="activeList !== 'Azi' && selectedTask">
-      <div class="px-5 pt-5 pb-2 shrink-0">
+    <!-- ── TASK DETAIL (any view + task selected) ── -->
+    <template v-if="selectedTask">
+      <div class="px-5 pt-5 pb-2 shrink-0 flex items-center justify-between">
         <p class="section-label">Detalii task selectat</p>
+        <button
+          class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-black/10 cursor-pointer border-0 bg-transparent text-gray-400 hover:text-black transition-colors text-lg leading-none"
+          title="Inchide"
+          @click="$emit('clear-selection')"
+        >×</button>
       </div>
 
       <div class="flex-1 overflow-y-auto px-5 pb-4 flex flex-col gap-3">
@@ -75,7 +80,7 @@
             <span class="text-2xl font-black leading-none">{{ progressPercent }}%</span>
           </div>
         </div>
-        <p class="text-xs text-gray-500 mt-2">{{ completedCount }} / {{ tasks.length }} tasks</p>
+        <p class="text-xs text-gray-500 mt-2">{{ viewCompletedCount }} / {{ viewTasks.length }} tasks</p>
       </div>
 
       <div class="sidebar-divider mx-0 shrink-0"></div>
@@ -111,19 +116,24 @@
 <script>
 export default {
   name: 'RightSidebar',
-  emits: ['update-task', 'open-edit-modal'],
+  emits: ['update-task', 'open-edit-modal', 'clear-selection'],
   props: {
     tasks:          { type: Array,  default: () => [] },
+    viewTasks:      { type: Array,  default: () => [] },
     completedCount: { type: Number, default: 0 },
     activeList:     { type: String, default: 'Azi' },
     selectedTask:   { type: Object, default: null },
+    isShared:       { type: Boolean, default: false },
   },
   data() {
     return { circumference: 2 * Math.PI * 46 }
   },
   computed: {
     progressPercent() {
-      return this.tasks.length ? Math.round(this.completedCount / this.tasks.length * 100) : 0
+      return this.viewTasks.length ? Math.round(this.viewCompletedCount / this.viewTasks.length * 100) : 0
+    },
+    viewCompletedCount() {
+      return this.viewTasks.filter(t => t.done).length
     },
     progressArc() {
       return (this.progressPercent / 100) * this.circumference

@@ -92,11 +92,6 @@
                   <span v-if="c.role === 'Owner'" class="text-xs text-gray-400">—</span>
                   <div v-else class="flex items-center gap-2 text-xs">
                     <button
-                      class="text-gray-500 hover:text-black underline cursor-pointer border-0 bg-transparent p-0 transition-colors"
-                      @click="savePermission(c)"
-                    >schimba</button>
-                    <span class="text-gray-300">/</span>
-                    <button
                       class="text-red-500 hover:text-red-700 underline cursor-pointer border-0 bg-transparent p-0 transition-colors"
                       @click="removeCollaborator(c.email)"
                     >elimina</button>
@@ -143,7 +138,7 @@ export default {
   },
   computed: {
     canInvite() {
-      return this.inviteEmail.trim().includes('@')
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.inviteEmail.trim())
     },
   },
   methods: {
@@ -151,7 +146,7 @@ export default {
       this.inviteError = ''
       this.inviteSuccess = ''
       const email = this.inviteEmail.trim().toLowerCase()
-      if (!email.includes('@')) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         this.inviteError = 'Introdu o adresa de email valida.'
         return
       }
@@ -168,9 +163,6 @@ export default {
     },
     removeCollaborator(email) {
       this.localCollaborators = this.localCollaborators.filter(c => c.email !== email)
-      this.emitUpdate()
-    },
-    savePermission() {
       this.emitUpdate()
     },
     emitUpdate() {

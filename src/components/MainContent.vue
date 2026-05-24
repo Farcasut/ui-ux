@@ -62,7 +62,7 @@
         <div
           v-for="task in tasks"
           :key="task.id"
-          :class="['task-row group', { 'is-selected': selectedTaskId === task.id }]"
+          :class="['task-row group', { 'is-selected': selectedTaskId === task.id, 'is-urgent': task.priority === 'P1' }]"
           @click="$emit('select-task', selectedTaskId === task.id ? null : task.id)"
         >
           <button
@@ -80,8 +80,22 @@
           </div>
 
           <div class="flex items-center gap-1.5 shrink-0">
-            <span v-if="task.assignee" class="tag-btn text-[10px]" style="height: 24px; min-width: auto; padding: 0 8px;">{{ task.assignee }}</span>
+            <span v-if="task.assignee && isTaskShared(task)" class="tag-btn text-[10px]" style="height: 24px; min-width: auto; padding: 0 8px;">{{ task.assignee }}</span>
             <span :class="['tag-btn text-[10px] font-bold', priorityClass(task.priority)]" style="height: 24px; min-width: 30px;">{{ task.priority }}</span>
+            <button
+              class="text-gray-400 hover:text-black cursor-pointer border-0 bg-transparent opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-0.5"
+              title="Duplica task"
+              @click.stop="$emit('open-edit-modal', { ...task, id: undefined })"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+            <button
+              class="text-gray-400 hover:text-red-500 cursor-pointer border-0 bg-transparent opacity-0 group-hover:opacity-100 transition-opacity text-xl leading-none shrink-0"
+              title="Sterge"
+              @click.stop="$emit('delete-task', task.id)"
+            >×</button>
           </div>
         </div>
 
@@ -144,7 +158,7 @@
             <div
               v-for="task in group.tasks"
               :key="task.id"
-              :class="['task-row group', { 'is-selected': selectedTaskId === task.id }]"
+              :class="['task-row group', { 'is-selected': selectedTaskId === task.id, 'is-urgent': task.priority === 'P1' }]"
               @click="$emit('select-task', selectedTaskId === task.id ? null : task.id)"
             >
               <button
@@ -159,14 +173,24 @@
               <div class="flex flex-col flex-1 min-w-0">
                 <span :class="['text-sm font-medium truncate', task.done ? 'line-through text-gray-400' : '']">{{ task.title }}</span>
                 <span class="text-xs text-gray-400 truncate">
-                  {{ task.priority }} · {{ formatDate(task.deadline) }}{{ task.time ? ' ' + task.time : '' }}{{ task.assignee ? ' · ' + task.assignee : '' }}
+                  {{ task.priority }} · {{ formatDate(task.deadline) }}{{ task.time ? ' ' + task.time : '' }}{{ isShared && task.assignee ? ' · ' + task.assignee : '' }}
                 </span>
               </div>
 
               <span :class="['tag-btn text-[10px] font-bold shrink-0', priorityClass(task.priority)]" style="height: 26px; min-width: 32px;">{{ task.priority }}</span>
 
               <button
-                class="text-gray-400 hover:text-black cursor-pointer border-0 bg-transparent opacity-0 group-hover:opacity-100 transition-opacity text-xl leading-none shrink-0"
+                class="text-gray-400 hover:text-black cursor-pointer border-0 bg-transparent opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-0.5"
+                title="Duplica task"
+                @click.stop="$emit('open-edit-modal', { ...task, id: undefined })"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+              </button>
+
+              <button
+                class="text-gray-400 hover:text-red-500 cursor-pointer border-0 bg-transparent opacity-0 group-hover:opacity-100 transition-opacity text-xl leading-none shrink-0"
                 title="Sterge"
                 @click.stop="$emit('delete-task', task.id)"
               >×</button>
@@ -197,6 +221,8 @@ export default {
     selectedTaskId: { type: String, default: null },
     searchQuery:    { type: String, default: '' },
     activeFilter:   { type: String, default: 'ALL' },
+    isShared:         { type: Boolean, default: false },
+    sharedListNames:  { type: Array,   default: () => [] },
   },
   computed: {
     urgentCount() {
@@ -251,6 +277,10 @@ export default {
     },
     priorityClass(p) {
       return { P1: 'is-priority-p1', P2: 'is-priority-p2', P3: 'is-priority-p3' }[p] || ''
+    },
+    // In the Today view tasks come from multiple lists, so check per-task
+    isTaskShared(task) {
+      return this.sharedListNames.includes(task.list)
     },
   },
 }
