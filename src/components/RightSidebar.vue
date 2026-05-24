@@ -50,9 +50,10 @@
             @click="$emit('open-edit-modal', selectedTask)"
           >Edit</button>
           <button
-            class="flex-1 py-2.5 rounded-xl bg-black text-white text-sm font-semibold cursor-pointer border-0 hover:bg-gray-800 transition-colors"
-            @click="$emit('update-task', { id: selectedTask.id, done: true })"
-          >Done</button>
+            class="flex-1 py-2.5 rounded-xl text-sm font-semibold cursor-pointer border-0 transition-colors"
+            :class="selectedTask.done ? 'bg-gray-200 text-black hover:bg-gray-300' : 'bg-black text-white hover:bg-gray-800'"
+            @click="$emit('update-task', { id: selectedTask.id, done: !selectedTask.done })"
+          >{{ selectedTask.done ? 'Undone' : 'Done' }}</button>
         </div>
         <div class="flex gap-2">
           <button
