@@ -1,8 +1,17 @@
 <template>
   <aside class="sidebar">
     <!-- Logo -->
-    <div class="px-5 pt-6 pb-5 shrink-0">
+    <div class="px-5 pt-6 pb-5 shrink-0 flex items-center justify-between">
       <span class="text-3xl font-black tracking-tight">Doer</span>
+      <button
+        class="w-8 h-8 flex flex-col items-center justify-center gap-1.5 rounded-lg cursor-pointer border-0 bg-transparent hover:bg-black/8 transition-colors shrink-0"
+        title="Ascunde meniu"
+        @click="$emit('toggle')"
+      >
+        <span class="w-4 h-0.5 bg-black/60 rounded-full block"></span>
+        <span class="w-4 h-0.5 bg-black/60 rounded-full block"></span>
+        <span class="w-4 h-0.5 bg-black/60 rounded-full block"></span>
+      </button>
     </div>
 
     <div class="sidebar-divider"></div>
@@ -140,7 +149,7 @@
 <script>
 export default {
   name: 'LeftSidebar',
-  emits: ['select-list', 'add-list', 'delete-list'],
+  emits: ['select-list', 'add-list', 'delete-list', 'toggle'],
   props: {
     activeList:  { type: String, default: 'Azi' },
     lists:       { type: Array,  default: () => [] },

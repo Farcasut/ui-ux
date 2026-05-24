@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* ── Sidebar slide transition ──────────────────────────────── */
+.sidebar-enter-active,
+.sidebar-leave-active {
+  transition: width 0.22s ease, min-width 0.22s ease, opacity 0.18s ease;
+  overflow: hidden;
+}
+.sidebar-enter-from,
+.sidebar-leave-to {
+  width: 0 !important;
+  min-width: 0 !important;
+  opacity: 0;
+}
+
 /* ── Design tokens ─────────────────────────────────────────── */
 @theme {
   --color-app-bg:           #CACACA;

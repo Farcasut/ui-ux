@@ -1,14 +1,19 @@
 <template>
-  <div class="flex h-screen overflow-hidden" style="background: #CACACA;">
-    <LeftSidebar
-      :lists="personalLists"
-      :shared-lists="allSharedLists"
-      :tasks="tasks"
-      :active-list="activeList"
-      @select-list="selectList"
-      @add-list="addList"
-      @delete-list="deleteList"
-    />
+  <div class="flex h-screen overflow-hidden relative" style="background: #CACACA;">
+    <Transition name="sidebar">
+      <LeftSidebar
+        v-if="sidebarOpen"
+        :lists="personalLists"
+        :shared-lists="allSharedLists"
+        :tasks="tasks"
+        :active-list="activeList"
+        @select-list="selectList"
+        @add-list="addList"
+        @delete-list="deleteList"
+        @toggle="sidebarOpen = false"
+      />
+    </Transition>
+
     <MainContent
       :tasks="filteredTasks"
       :all-tasks="tasks"
@@ -19,6 +24,7 @@
       :active-filter="activeFilter"
       :is-shared="activeListIsShared"
       :shared-list-names="allSharedListNames"
+      :sidebar-open="sidebarOpen"
       @update:search-query="searchQuery = $event"
       @update:active-filter="activeFilter = $event"
       @select-task="selectedTaskId = $event"
@@ -28,6 +34,7 @@
       @toggle-task="toggleTask"
       @update-task="updateTask"
       @delete-task="deleteTask"
+      @toggle-sidebar="sidebarOpen = true"
     />
     <RightSidebar
       :tasks="tasks"
@@ -39,6 +46,7 @@
       @update-task="updateTask"
       @open-edit-modal="openEditModal"
       @clear-selection="selectedTaskId = null"
+      @delete-task="deleteTask"
     />
     <TaskModal
       v-if="showModal"
@@ -104,6 +112,7 @@ export default {
       selectedTaskId: null,
       showModal:      false,
       modalTask:      null,
+      sidebarOpen:    true,
       showShareModal: false,
       shareModalList: null,
       shareData: {

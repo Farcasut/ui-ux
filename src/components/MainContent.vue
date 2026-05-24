@@ -5,9 +5,20 @@
     <template v-if="activeList === 'Azi'">
 
       <!-- Search bar -->
-      <div class="px-6 pt-5 shrink-0">
+      <div class="px-6 pt-5 shrink-0 flex items-center gap-3">
+        <button
+          v-if="!sidebarOpen"
+          class="w-9 h-9 flex flex-col items-center justify-center gap-1.5 rounded-xl cursor-pointer border border-black/20 shrink-0 transition-colors hover:border-black/40"
+          style="background: var(--color-surface);"
+          title="Deschide meniu"
+          @click="$emit('toggle-sidebar')"
+        >
+          <span class="w-4 h-0.5 bg-black rounded-full block"></span>
+          <span class="w-4 h-0.5 bg-black rounded-full block"></span>
+          <span class="w-4 h-0.5 bg-black rounded-full block"></span>
+        </button>
         <div
-          class="flex items-center gap-3 px-4 rounded-full border border-black/30"
+          class="flex items-center gap-3 px-4 rounded-full border border-black/30 flex-1"
           style="height: 48px; background: var(--color-surface);"
         >
           <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -76,7 +87,7 @@
 
           <div class="flex flex-col flex-1 min-w-0">
             <span :class="['text-sm font-medium truncate', task.done ? 'line-through text-gray-400' : '']">{{ task.title }}</span>
-            <span class="text-xs text-gray-400 truncate">{{ task.list }}{{ task.time ? ' · ' + task.time : '' }}</span>
+            <span :class="['text-xs truncate', task.priority === 'P1' ? 'text-red-500' : 'text-gray-400']">{{ task.list }}{{ task.time ? ' · ' + task.time : '' }}</span>
           </div>
 
           <div class="flex items-center gap-1.5 shrink-0">
@@ -119,7 +130,20 @@
       <!-- Header -->
       <div class="px-6 pt-6 pb-4 shrink-0">
         <div class="flex items-start justify-between gap-4 mb-1">
-          <h1 class="text-2xl font-black">Lista: {{ activeList }}</h1>
+          <div class="flex items-center gap-3">
+            <button
+              v-if="!sidebarOpen"
+              class="w-9 h-9 flex flex-col items-center justify-center gap-1.5 rounded-xl cursor-pointer border border-black/20 shrink-0 transition-colors hover:border-black/40"
+              style="background: var(--color-surface);"
+              title="Deschide meniu"
+              @click="$emit('toggle-sidebar')"
+            >
+              <span class="w-4 h-0.5 bg-black rounded-full block"></span>
+              <span class="w-4 h-0.5 bg-black rounded-full block"></span>
+              <span class="w-4 h-0.5 bg-black rounded-full block"></span>
+            </button>
+            <h1 class="text-2xl font-black">Lista: {{ activeList }}</h1>
+          </div>
           <button class="tag-btn px-4 mt-1 shrink-0" style="height: 34px;" @click="$emit('open-share-modal', activeList)">Partajeaza</button>
         </div>
         <p class="text-xs text-gray-500">
@@ -172,8 +196,8 @@
 
               <div class="flex flex-col flex-1 min-w-0">
                 <span :class="['text-sm font-medium truncate', task.done ? 'line-through text-gray-400' : '']">{{ task.title }}</span>
-                <span class="text-xs text-gray-400 truncate">
-                  {{ task.priority }} · {{ formatDate(task.deadline) }}{{ task.time ? ' ' + task.time : '' }}{{ isShared && task.assignee ? ' · ' + task.assignee : '' }}
+                <span :class="['text-xs truncate', task.priority === 'P1' ? 'text-red-500' : 'text-gray-400']">
+                  {{ formatDate(task.deadline) }}{{ task.time ? ' ' + task.time : '' }}{{ isShared && task.assignee ? ' · ' + task.assignee : '' }}
                 </span>
               </div>
 
@@ -211,7 +235,7 @@ export default {
   emits: [
     'update:search-query', 'update:active-filter',
     'select-task', 'open-add-modal', 'open-edit-modal', 'open-share-modal',
-    'toggle-task', 'update-task', 'delete-task',
+    'toggle-task', 'update-task', 'delete-task', 'toggle-sidebar',
   ],
   props: {
     tasks:          { type: Array,  default: () => [] },
@@ -223,6 +247,7 @@ export default {
     activeFilter:   { type: String, default: 'ALL' },
     isShared:         { type: Boolean, default: false },
     sharedListNames:  { type: Array,   default: () => [] },
+    sidebarOpen:      { type: Boolean, default: true },
   },
   computed: {
     urgentCount() {

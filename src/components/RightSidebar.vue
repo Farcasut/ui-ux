@@ -43,15 +43,27 @@
         </div>
       </div>
 
-      <div class="px-5 pb-5 flex gap-2 shrink-0">
-        <button
-          class="flex-1 py-2.5 rounded-xl border border-black text-sm font-semibold bg-transparent cursor-pointer hover:bg-black/5 transition-colors"
-          @click="$emit('open-edit-modal', selectedTask)"
-        >Edit</button>
-        <button
-          class="flex-1 py-2.5 rounded-xl bg-black text-white text-sm font-semibold cursor-pointer border-0 hover:bg-gray-800 transition-colors"
-          @click="$emit('update-task', { id: selectedTask.id, done: true })"
-        >Done</button>
+      <div class="px-5 pb-5 flex flex-col gap-2 shrink-0">
+        <div class="flex gap-2">
+          <button
+            class="flex-1 py-2.5 rounded-xl border border-black text-sm font-semibold bg-transparent cursor-pointer hover:bg-black/5 transition-colors"
+            @click="$emit('open-edit-modal', selectedTask)"
+          >Edit</button>
+          <button
+            class="flex-1 py-2.5 rounded-xl bg-black text-white text-sm font-semibold cursor-pointer border-0 hover:bg-gray-800 transition-colors"
+            @click="$emit('update-task', { id: selectedTask.id, done: true })"
+          >Done</button>
+        </div>
+        <div class="flex gap-2">
+          <button
+            class="flex-1 py-2.5 rounded-xl border border-black/20 text-sm font-semibold bg-transparent cursor-pointer hover:bg-black/5 transition-colors"
+            @click="$emit('open-edit-modal', { ...selectedTask, id: undefined })"
+          >Duplica</button>
+          <button
+            class="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold cursor-pointer border-0 hover:bg-red-700 transition-colors"
+            @click="$emit('delete-task', selectedTask.id)"
+          >Sterge</button>
+        </div>
       </div>
     </template>
 
@@ -116,7 +128,7 @@
 <script>
 export default {
   name: 'RightSidebar',
-  emits: ['update-task', 'open-edit-modal', 'clear-selection'],
+  emits: ['update-task', 'open-edit-modal', 'clear-selection', 'delete-task'],
   props: {
     tasks:          { type: Array,  default: () => [] },
     viewTasks:      { type: Array,  default: () => [] },
