@@ -1,238 +1,262 @@
 <template>
-  <main class="flex-1 flex flex-col overflow-hidden py-3.5 px-8" style="background: var(--color-app-bg);">
-    <!-- Top search / filter bar -->
-    <div
-      class="flex items-center gap-3 px-4 rounded-[24.5px] border border-black mb-5 shrink-0"
-      style="height: 59px; background: var(--color-app-bg);"
-    >
-      <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-      </svg>
-      <input
-        type="text"
-        :value="searchQuery"
-        placeholder="Search tasks..."
-        class="flex-1 bg-transparent text-sm outline-none placeholder-gray-500"
-        @input="$emit('update:search-query', $event.target.value)"
-      />
-      <div class="flex items-center gap-1.5">
-        <button
-          v-for="c in quickChips"
-          :key="c"
-          :class="['tag-btn', { 'is-active': activeFilter === c }]"
-          style="height: 28px;"
-          @click="$emit('update:active-filter', c)"
-        >{{ c }}</button>
+  <main class="flex-1 flex flex-col overflow-hidden" style="background: var(--color-app-bg);">
+
+    <!-- ════════════════════════════════════════ TODAY VIEW (WF1) -->
+    <template v-if="activeList === 'Azi'">
+
+      <!-- Search bar -->
+      <div class="px-6 pt-5 shrink-0">
+        <div
+          class="flex items-center gap-3 px-4 rounded-full border border-black/30"
+          style="height: 48px; background: var(--color-surface);"
+        >
+          <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input
+            type="text"
+            :value="searchQuery"
+            placeholder="Cauta task..."
+            class="flex-1 bg-transparent text-sm outline-none placeholder-gray-400"
+            @input="$emit('update:search-query', $event.target.value)"
+          />
+        </div>
       </div>
-    </div>
 
-    <!-- Stat cards -->
-    <div class="grid grid-cols-3 gap-4 mb-5 shrink-0">
-      <div v-for="card in statCards" :key="card.title" class="stat-card">
-        <p class="section-label">{{ card.title }}</p>
-        <p class="text-3xl font-black leading-none">{{ card.value }}</p>
-        <p class="text-xs text-gray-500">{{ card.sub }}</p>
+      <!-- Heading + Stat cards -->
+      <div class="px-6 pt-5 shrink-0">
+        <h1 class="text-2xl font-black mb-4">Azi</h1>
+
+        <div class="grid grid-cols-3 gap-3 mb-4">
+          <div class="stat-card">
+            <p class="section-label">Urgent</p>
+            <p class="text-3xl font-black leading-none mt-1">{{ urgentCount }}</p>
+            <p class="text-xs text-gray-500 mt-1">{{ urgentCount }} tasks sunt urgente</p>
+            <p class="text-[10px] text-gray-400">Prioritate P1</p>
+          </div>
+          <div class="stat-card">
+            <p class="section-label">Planificate</p>
+            <p class="text-3xl font-black leading-none mt-1">{{ plannedCount }}</p>
+            <p class="text-xs text-gray-500 mt-1">Deadline Azi</p>
+          </div>
+          <div class="stat-card">
+            <p class="section-label">Finalizate</p>
+            <p class="text-3xl font-black leading-none mt-1">{{ doneCount }}<span class="text-lg text-gray-400">/{{ tasks.length }}</span></p>
+            <p class="text-xs text-gray-500 mt-1">Status Azi</p>
+          </div>
+        </div>
+
+        <!-- Filter chips -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button
+            v-for="chip in todayFilterChips"
+            :key="chip"
+            :class="['filter-chip', { 'is-active': activeFilter === chip }]"
+            @click="$emit('update:active-filter', chip)"
+          >{{ chip }}</button>
+        </div>
       </div>
-    </div>
 
-    <!-- Filter chips row -->
-    <div class="flex items-center gap-1.5 mb-3 flex-wrap shrink-0">
-      <button
-        v-for="chip in priorityChips"
-        :key="chip"
-        :class="['filter-chip', { 'is-active': activeFilter === chip }]"
-        @click="$emit('update:active-filter', chip)"
-      >{{ chip }}</button>
-      <span class="ml-1 text-gray-400 text-xs">{{ tasks.length }} task{{ tasks.length !== 1 ? 's' : '' }}</span>
-    </div>
-
-    <!-- Task add row -->
-    <div class="task-row mb-2 shrink-0" style="cursor: default;">
-      <div class="task-checkbox"></div>
-      <input
-        v-model="newTitle"
-        type="text"
-        :placeholder="addPlaceholder"
-        class="flex-1 bg-transparent text-sm italic text-gray-500 placeholder-gray-400 outline-none"
-        @keydown.enter.prevent="submitNewTask"
-      />
-      <button
-        v-if="newTitle.trim()"
-        class="text-xs px-3 py-1 rounded-full bg-black text-white cursor-pointer border-0 shrink-0"
-        @click="submitNewTask"
-      >Add</button>
-    </div>
-
-    <!-- Task list -->
-    <div class="flex flex-col gap-[7px] overflow-y-auto flex-1 pb-4">
-      <transition-group name="task">
+      <!-- Task list -->
+      <div class="flex flex-col gap-2 overflow-y-auto flex-1 px-6 pt-3 pb-4">
         <div
           v-for="task in tasks"
           :key="task.id"
-          :class="['task-row group relative', { 'is-selected': selectedId === task.id }]"
-          @click="selectedId = selectedId === task.id ? null : task.id"
+          :class="['task-row group', { 'is-selected': selectedTaskId === task.id }]"
+          @click="$emit('select-task', selectedTaskId === task.id ? null : task.id)"
         >
-          <!-- Checkbox -->
           <button
             :class="['task-checkbox', { 'is-done': task.done }]"
             @click.stop="$emit('toggle-task', task.id)"
           >
-            <svg v-if="task.done" viewBox="0 0 10 8" class="w-3 h-3" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <svg v-if="task.done" viewBox="0 0 10 8" class="w-2.5 h-2.5" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M1 4l3 3 5-6"/>
             </svg>
           </button>
 
-          <!-- Title -->
-          <span
-            v-if="editingId !== task.id"
-            :class="['flex-1 text-sm italic truncate', task.done ? 'line-through text-gray-400' : '']"
-            @dblclick.stop="startEdit(task)"
-          >{{ task.title }}</span>
-          <input
-            v-else
-            :id="'edit-' + task.id"
-            type="text"
-            :value="editingTitle"
-            class="flex-1 text-sm italic bg-transparent outline-none border-b border-black"
-            @input="editingTitle = $event.target.value"
-            @blur="saveEdit(task)"
-            @keydown.enter.prevent="saveEdit(task)"
-            @keydown.escape.prevent="cancelEdit"
-            @click.stop
-          />
-
-          <!-- Date picker -->
-          <input
-            type="date"
-            :value="task.deadline"
-            class="text-xs text-gray-500 bg-transparent outline-none cursor-pointer shrink-0 w-28"
-            @change.stop="$emit('update-task', { id: task.id, deadline: $event.target.value })"
-            @click.stop
-          />
-
-          <!-- Priority button -->
-          <button
-            :class="['tag-btn', { 'is-priority': task.priority === 'P1' }]"
-            style="font-weight: 600;"
-            @click.stop="cyclePriority(task)"
-            title="Click to change priority"
-          >{{ task.priority }}</button>
-
-          <!-- List tag -->
-          <div class="relative shrink-0" @click.stop>
-            <button
-              class="tag-btn"
-              :title="task.list || 'No list'"
-              @click="listDropdownId = listDropdownId === task.id ? null : task.id"
-            >{{ task.list ? task.list.slice(0, 7) : '—' }}</button>
-
-            <div
-              v-if="listDropdownId === task.id"
-              class="absolute right-0 top-full mt-1 bg-white border border-black rounded-xl shadow-lg z-20 py-1 overflow-hidden"
-              style="min-width: 120px;"
-            >
-              <button
-                v-for="l in allLists"
-                :key="l.value"
-                :class="['w-full text-left text-xs px-3 py-1.5 cursor-pointer border-0 bg-transparent', task.list === l.value ? 'font-bold bg-gray-100' : 'hover:bg-gray-50']"
-                @click="changeList(task, l.value)"
-              >{{ l.label }}</button>
-            </div>
+          <div class="flex flex-col flex-1 min-w-0">
+            <span :class="['text-sm font-medium truncate', task.done ? 'line-through text-gray-400' : '']">{{ task.title }}</span>
+            <span class="text-xs text-gray-400 truncate">{{ task.list }}{{ task.time ? ' · ' + task.time : '' }}</span>
           </div>
 
-          <!-- Delete -->
-          <button
-            class="text-gray-400 hover:text-black cursor-pointer border-0 bg-transparent opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-xl leading-none"
-            @click.stop="$emit('delete-task', task.id)"
-            title="Delete"
-          >×</button>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span v-if="task.assignee" class="tag-btn text-[10px]" style="height: 24px; min-width: auto; padding: 0 8px;">{{ task.assignee }}</span>
+            <span :class="['tag-btn text-[10px] font-bold', priorityClass(task.priority)]" style="height: 24px; min-width: 30px;">{{ task.priority }}</span>
+          </div>
         </div>
-      </transition-group>
 
-      <p v-if="tasks.length === 0" class="text-center text-gray-400 text-sm mt-8">No tasks found</p>
-    </div>
+        <!-- Add task button -->
+        <button
+          class="task-row border border-dashed border-black/25 bg-transparent hover:bg-transparent hover:border-black/50 transition-colors cursor-pointer"
+          style="justify-content: flex-start;"
+          @click="$emit('open-add-modal', null)"
+        >
+          <span class="text-gray-400 text-lg leading-none">+</span>
+          <span class="text-sm text-gray-400 italic">Adauga task...</span>
+        </button>
 
-    <div v-if="listDropdownId" class="fixed inset-0 z-10" @click="listDropdownId = null"></div>
+        <p v-if="tasks.length === 0" class="text-center text-gray-400 text-sm mt-8">Niciun task pentru azi</p>
+      </div>
+    </template>
+
+    <!-- ════════════════════════════════════════ LIST VIEW (WF2) -->
+    <template v-else>
+
+      <!-- Header -->
+      <div class="px-6 pt-6 pb-4 shrink-0">
+        <div class="flex items-start justify-between gap-4 mb-1">
+          <h1 class="text-2xl font-black">Lista: {{ activeList }}</h1>
+          <button class="tag-btn px-4 mt-1 shrink-0" style="height: 34px;">Partajeaza</button>
+        </div>
+        <p class="text-xs text-gray-500">
+          Owner: Mihai &nbsp;·&nbsp; {{ allListTasks.length }} task-uri &nbsp;·&nbsp; {{ doneListCount }} finalizate
+        </p>
+
+        <!-- Filters -->
+        <div class="flex items-center gap-1.5 mt-3 flex-wrap">
+          <button
+            v-for="chip in listFilterChips"
+            :key="chip"
+            :class="['filter-chip', { 'is-active': activeFilter === chip }]"
+            @click="$emit('update:active-filter', chip)"
+          >{{ chip }}</button>
+        </div>
+      </div>
+
+      <div class="sidebar-divider mx-6"></div>
+
+      <!-- Add task -->
+      <div class="px-6 pt-3 shrink-0">
+        <button
+          class="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-gray-500 hover:text-black transition-colors bg-transparent cursor-pointer border border-dashed border-black/25 hover:border-black/50"
+          @click="$emit('open-add-modal', activeList)"
+        >
+          <span class="text-base leading-none">+</span>
+          Adauga task in lista {{ activeList }}...
+        </button>
+      </div>
+
+      <!-- Grouped task list -->
+      <div class="flex-1 overflow-y-auto px-6 py-4">
+        <div v-for="group in taskGroups" :key="group.label" class="mb-6">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2 px-1">{{ group.label }}</h2>
+          <div class="flex flex-col gap-2">
+            <div
+              v-for="task in group.tasks"
+              :key="task.id"
+              :class="['task-row group', { 'is-selected': selectedTaskId === task.id }]"
+              @click="$emit('select-task', selectedTaskId === task.id ? null : task.id)"
+            >
+              <button
+                :class="['task-checkbox', { 'is-done': task.done }]"
+                @click.stop="$emit('toggle-task', task.id)"
+              >
+                <svg v-if="task.done" viewBox="0 0 10 8" class="w-2.5 h-2.5" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 4l3 3 5-6"/>
+                </svg>
+              </button>
+
+              <div class="flex flex-col flex-1 min-w-0">
+                <span :class="['text-sm font-medium truncate', task.done ? 'line-through text-gray-400' : '']">{{ task.title }}</span>
+                <span class="text-xs text-gray-400 truncate">
+                  {{ task.priority }} · {{ formatDate(task.deadline) }}{{ task.time ? ' ' + task.time : '' }}{{ task.assignee ? ' · ' + task.assignee : '' }}
+                </span>
+              </div>
+
+              <span :class="['tag-btn text-[10px] font-bold shrink-0', priorityClass(task.priority)]" style="height: 26px; min-width: 32px;">{{ task.priority }}</span>
+
+              <button
+                class="text-gray-400 hover:text-black cursor-pointer border-0 bg-transparent opacity-0 group-hover:opacity-100 transition-opacity text-xl leading-none shrink-0"
+                title="Sterge"
+                @click.stop="$emit('delete-task', task.id)"
+              >×</button>
+            </div>
+          </div>
+        </div>
+
+        <p v-if="tasks.length === 0" class="text-center text-gray-400 text-sm mt-8">Niciun task in aceasta lista</p>
+      </div>
+    </template>
+
   </main>
 </template>
 
 <script>
-const PRIORITIES = ['P1', 'P2', 'P3', 'P4']
-
 export default {
   name: 'MainContent',
-  emits: ['update:search-query', 'update:active-filter', 'add-task', 'toggle-task', 'update-task', 'delete-task'],
+  emits: [
+    'update:search-query', 'update:active-filter',
+    'select-task', 'open-add-modal', 'open-edit-modal',
+    'toggle-task', 'update-task', 'delete-task',
+  ],
   props: {
-    tasks:        { type: Array,  default: () => [] },
-    searchQuery:  { type: String, default: '' },
-    activeFilter: { type: String, default: 'ALL' },
-    lists:        { type: Array,  default: () => [] },
-    activeList:   { type: String, default: 'Today' },
-  },
-  data() {
-    return {
-      newTitle:       '',
-      editingId:      null,
-      editingTitle:   '',
-      selectedId:     null,
-      listDropdownId: null,
-      priorityChips:  ['ALL', 'P1', 'P2', 'P3', 'P4'],
-      quickChips:     ['ALL', 'P1', 'P2', 'P3'],
-    }
+    tasks:          { type: Array,  default: () => [] },
+    allTasks:       { type: Array,  default: () => [] },
+    lists:          { type: Array,  default: () => [] },
+    activeList:     { type: String, default: 'Azi' },
+    selectedTaskId: { type: String, default: null },
+    searchQuery:    { type: String, default: '' },
+    activeFilter:   { type: String, default: 'ALL' },
   },
   computed: {
-    allLists() {
-      return [
-        { label: '— No list', value: '' },
-        { label: 'Inbox',     value: 'Inbox' },
-        ...this.lists.filter(l => l !== 'Inbox').map(l => ({ label: l, value: l })),
-      ]
+    urgentCount() {
+      return this.tasks.filter(t => !t.done && t.priority === 'P1').length
     },
-    addPlaceholder() {
-      return this.activeList === 'Today' ? 'Title it...' : `Add to ${this.activeList}...`
+    plannedCount() {
+      return this.tasks.filter(t => !t.done).length
     },
-    statCards() {
-      const total = this.tasks.length
-      const done  = this.tasks.filter(t => t.done).length
-      const p1    = this.tasks.filter(t => t.priority === 'P1' && !t.done).length
-      return [
-        { title: 'Total Tasks',    value: String(total), sub: 'in this view' },
-        { title: 'Completed',      value: String(done),  sub: `${total ? Math.round(done / total * 100) : 0}% done` },
-        { title: 'High Priority',  value: String(p1),    sub: 'P1 remaining' },
-      ]
+    doneCount() {
+      return this.tasks.filter(t => t.done).length
+    },
+    allListTasks() {
+      return this.allTasks.filter(t => t.list === this.activeList)
+    },
+    doneListCount() {
+      return this.allListTasks.filter(t => t.done).length
+    },
+    todayFilterChips() {
+      const uniqueLists = [...new Set(this.allTasks.map(t => t.list).filter(Boolean))].slice(0, 3)
+      return ['ALL', 'P1', 'P2', 'P3', ...uniqueLists]
+    },
+    listFilterChips() {
+      return ['ALL', 'P1', 'P2', 'P3']
+    },
+    taskGroups() {
+      const todayStr = new Date().toISOString().slice(0, 10)
+      const weekEnd  = new Date(); weekEnd.setDate(weekEnd.getDate() + 7)
+      const weekStr  = weekEnd.toISOString().slice(0, 10)
+
+      const todayTasks  = this.tasks.filter(t => !t.deadline || t.deadline <= todayStr)
+      const weekTasks   = this.tasks.filter(t => t.deadline > todayStr && t.deadline <= weekStr)
+      const laterTasks  = this.tasks.filter(t => t.deadline > weekStr)
+
+      const groups = []
+      if (todayTasks.length)  groups.push({ label: 'Azi', tasks: todayTasks })
+      if (weekTasks.length)   groups.push({ label: 'Saptamana aceasta', tasks: weekTasks })
+      if (laterTasks.length)  groups.push({ label: 'Mai tarziu', tasks: laterTasks })
+      if (!groups.length && this.tasks.length) groups.push({ label: 'Toate', tasks: this.tasks })
+      return groups
     },
   },
   methods: {
-    submitNewTask() {
-      const title = this.newTitle.trim()
-      if (!title) return
-      this.$emit('add-task', title)
-      this.newTitle = ''
+    formatDate(iso) {
+      if (!iso) return ''
+      const d = new Date(iso + 'T00:00:00')
+      const today = new Date(); today.setHours(0, 0, 0, 0)
+      const diff = Math.round((d - today) / 86400000)
+      if (diff === 0) return 'azi'
+      if (diff === 1) return 'maine'
+      if (diff < 0)  return `${Math.abs(diff)}z intarziere`
+      return d.toLocaleDateString('ro-RO', { weekday: 'short', day: 'numeric', month: 'short' })
     },
-    startEdit(task) {
-      this.editingId    = task.id
-      this.editingTitle = task.title
-      this.$nextTick(() => document.getElementById('edit-' + task.id)?.focus())
-    },
-    saveEdit(task) {
-      const title = this.editingTitle.trim()
-      if (title && title !== task.title) this.$emit('update-task', { id: task.id, title })
-      this.editingId = null
-    },
-    cancelEdit() { this.editingId = null },
-    cyclePriority(task) {
-      const next = PRIORITIES[(PRIORITIES.indexOf(task.priority) + 1) % PRIORITIES.length]
-      this.$emit('update-task', { id: task.id, priority: next })
-    },
-    changeList(task, list) {
-      this.$emit('update-task', { id: task.id, list })
-      this.listDropdownId = null
+    priorityClass(p) {
+      return { P1: 'is-priority-p1', P2: 'is-priority-p2', P3: 'is-priority-p3' }[p] || ''
     },
   },
 }
 </script>
 
 <style scoped>
-.task-enter-active, .task-leave-active { transition: all 0.2s ease; }
-.task-enter-from,  .task-leave-to      { opacity: 0; transform: translateY(-6px); }
+.task-enter-active, .task-leave-active { transition: all 0.18s ease; }
+.task-enter-from,  .task-leave-to      { opacity: 0; transform: translateY(-4px); }
 </style>

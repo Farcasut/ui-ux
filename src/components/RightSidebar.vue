@@ -1,65 +1,122 @@
 <template>
-  <aside class="sidebar overflow-y-auto px-4 py-4">
-    <h2 class="section-label mb-4">TODAY'S</h2>
+  <aside class="sidebar overflow-hidden flex flex-col">
 
-    <!-- Donut chart -->
-    <div class="flex flex-col items-center mb-4">
-      <div class="relative">
-        <svg width="120" height="120" viewBox="0 0 120 120">
-          <circle cx="60" cy="60" r="46" fill="none" stroke="var(--color-surface-selected)" stroke-width="16"/>
-          <circle
-            cx="60" cy="60" r="46"
-            fill="none"
-            stroke="#0D0D0D"
-            stroke-width="16"
-            :stroke-dasharray="`${progressArc} ${circumference - progressArc}`"
-            stroke-dashoffset="57.81"
-            stroke-linecap="round"
-            transform="rotate(-90 60 60)"
-          />
-        </svg>
-        <div class="absolute inset-0 flex flex-col items-center justify-center">
-          <span class="text-xl font-black leading-none">{{ progressPercent }}%</span>
-          <span class="text-[9px] text-gray-500 mt-0.5">done</span>
+    <!-- ── TASK DETAIL (List view + task selected) ── -->
+    <template v-if="activeList !== 'Azi' && selectedTask">
+      <div class="px-5 pt-5 pb-2 shrink-0">
+        <p class="section-label">Detalii task selectat</p>
+      </div>
+
+      <div class="flex-1 overflow-y-auto px-5 pb-4 flex flex-col gap-3">
+        <div class="detail-field">
+          <label class="detail-label">Titlu</label>
+          <div class="detail-value">{{ selectedTask.title }}</div>
+        </div>
+        <div class="detail-field">
+          <label class="detail-label">Lista</label>
+          <div class="detail-value">{{ selectedTask.list }}</div>
+        </div>
+        <div class="detail-field">
+          <label class="detail-label">Prioritate</label>
+          <div class="detail-value">{{ selectedTask.priority }}{{ selectedTask.priority === 'P1' ? ' – urgent' : selectedTask.priority === 'P2' ? ' – normal' : ' – low' }}</div>
+        </div>
+        <div class="detail-field">
+          <label class="detail-label">Deadline</label>
+          <div class="detail-value">{{ formatDeadline(selectedTask.deadline, selectedTask.time) }}</div>
+        </div>
+        <div class="detail-field">
+          <label class="detail-label">Reminder</label>
+          <div class="detail-value">{{ selectedTask.reminder || '—' }}</div>
+        </div>
+        <div class="detail-field">
+          <label class="detail-label">Status</label>
+          <div class="detail-value">{{ selectedTask.done ? 'Finalizat' : 'In lucru' }}</div>
+        </div>
+        <div v-if="selectedTask.notes" class="detail-field">
+          <label class="detail-label">Note</label>
+          <div class="detail-value text-xs text-gray-500">{{ selectedTask.notes }}</div>
         </div>
       </div>
-      <p class="text-xs text-gray-500 mt-1">{{ completedCount }} / {{ tasks.length }} tasks</p>
-    </div>
 
-    <div class="sidebar-divider mx-0 mb-4"></div>
+      <div class="px-5 pb-5 flex gap-2 shrink-0">
+        <button
+          class="flex-1 py-2.5 rounded-xl border border-black text-sm font-semibold bg-transparent cursor-pointer hover:bg-black/5 transition-colors"
+          @click="$emit('open-edit-modal', selectedTask)"
+        >Edit</button>
+        <button
+          class="flex-1 py-2.5 rounded-xl bg-black text-white text-sm font-semibold cursor-pointer border-0 hover:bg-gray-800 transition-colors"
+          @click="$emit('update-task', { id: selectedTask.id, done: true })"
+        >Done</button>
+      </div>
+    </template>
 
-    <!-- Upcoming deadlines -->
-    <div class="flex-1 overflow-y-auto">
-      <p class="section-label mb-3">Upcoming Deadlines</p>
+    <!-- ── TODAY PROGRESS (default view) ── -->
+    <template v-else>
+      <div class="px-5 pt-5 pb-2 shrink-0">
+        <p class="section-label">Today Progress</p>
+      </div>
 
-      <p v-if="upcomingTasks.length === 0" class="text-xs text-gray-400">All caught up!</p>
-
-      <div class="flex flex-col gap-2">
-        <div
-          v-for="task in upcomingTasks"
-          :key="task.id"
-          class="flex items-start gap-2 py-2 border-b border-black/10 last:border-0"
-        >
-          <span :class="['w-2 h-2 rounded-full shrink-0 mt-1.5', priorityDot(task.priority)]"></span>
-          <div class="flex-1 min-w-0">
-            <p :class="['text-xs truncate', task.done ? 'line-through text-gray-400' : '']">{{ task.title }}</p>
-            <p class="text-[10px] text-gray-500 mt-0.5">{{ formatDate(task.deadline) }}</p>
+      <!-- Donut chart -->
+      <div class="flex flex-col items-center py-4 shrink-0">
+        <div class="relative">
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="46" fill="none" stroke="var(--color-surface-selected)" stroke-width="14"/>
+            <circle
+              cx="60" cy="60" r="46"
+              fill="none"
+              stroke="#0D0D0D"
+              stroke-width="14"
+              :stroke-dasharray="`${progressArc} ${circumference - progressArc}`"
+              stroke-linecap="round"
+              transform="rotate(-90 60 60)"
+            />
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span class="text-2xl font-black leading-none">{{ progressPercent }}%</span>
           </div>
-          <span class="text-[9px] font-bold shrink-0 mt-0.5" :class="urgencyColor(task.deadline)">
-            {{ daysUntil(task.deadline) }}
-          </span>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">{{ completedCount }} / {{ tasks.length }} tasks</p>
+      </div>
+
+      <div class="sidebar-divider mx-0 shrink-0"></div>
+
+      <!-- Deadlines -->
+      <div class="flex-1 overflow-y-auto px-5 pt-4 pb-4">
+        <p class="section-label mb-3">Deadlines</p>
+
+        <p v-if="deadlineTasks.length === 0" class="text-xs text-gray-400">Totul e in regula!</p>
+
+        <div class="flex flex-col gap-1.5">
+          <div
+            v-for="task in deadlineTasks"
+            :key="task.id"
+            class="flex items-center gap-2 py-1.5"
+          >
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-medium truncate">{{ task.title }}</p>
+              <p class="text-[10px] text-gray-400">{{ task.list }}</p>
+            </div>
+            <span
+              class="text-[11px] font-bold shrink-0 px-2 py-1 rounded-lg"
+              :class="timeBadgeClass(task.deadline)"
+            >{{ task.time || formatDate(task.deadline) }}</span>
+          </div>
         </div>
       </div>
-    </div>
+    </template>
+
   </aside>
 </template>
 
 <script>
 export default {
   name: 'RightSidebar',
+  emits: ['update-task', 'open-edit-modal'],
   props: {
     tasks:          { type: Array,  default: () => [] },
     completedCount: { type: Number, default: 0 },
+    activeList:     { type: String, default: 'Azi' },
+    selectedTask:   { type: Object, default: null },
   },
   data() {
     return { circumference: 2 * Math.PI * 46 }
@@ -71,38 +128,34 @@ export default {
     progressArc() {
       return (this.progressPercent / 100) * this.circumference
     },
-    upcomingTasks() {
+    deadlineTasks() {
+      const today = new Date().toISOString().slice(0, 10)
       return this.tasks
-        .filter(t => !t.done && t.deadline)
-        .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
-        .slice(0, 8)
+        .filter(t => !t.done && t.deadline && t.deadline <= today)
+        .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'))
+        .slice(0, 6)
     },
   },
   methods: {
     formatDate(iso) {
       if (!iso) return ''
-      return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      return new Date(iso + 'T00:00:00').toLocaleDateString('ro-RO', { month: 'short', day: 'numeric' })
     },
-    daysUntil(iso) {
-      if (!iso) return ''
-      const today  = new Date(); today.setHours(0, 0, 0, 0)
-      const diff   = Math.round((new Date(iso + 'T00:00:00') - today) / 86400000)
-      if (diff < 0)  return 'LATE'
-      if (diff === 0) return 'TODAY'
-      if (diff === 1) return 'TMR'
-      return `${diff}d`
-    },
-    urgencyColor(iso) {
-      if (!iso) return ''
+    formatDeadline(iso, time) {
+      if (!iso) return '—'
+      const d = new Date(iso + 'T00:00:00')
       const today = new Date(); today.setHours(0, 0, 0, 0)
-      const diff  = Math.round((new Date(iso + 'T00:00:00') - today) / 86400000)
-      if (diff < 0)   return 'text-red-600'
-      if (diff === 0) return 'text-red-500'
-      if (diff <= 2)  return 'text-orange-500'
-      return 'text-gray-400'
+      const diff = Math.round((d - today) / 86400000)
+      const dateStr = diff === 0 ? 'Azi' : diff === 1 ? 'Maine' : d.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' })
+      return time ? `${dateStr}, ${time}` : dateStr
     },
-    priorityDot(p) {
-      return { P1: 'bg-black', P2: 'bg-gray-600', P3: 'bg-gray-400', P4: 'bg-gray-300' }[p] || 'bg-gray-300'
+    timeBadgeClass(iso) {
+      if (!iso) return 'bg-gray-200 text-gray-600'
+      const today = new Date(); today.setHours(0, 0, 0, 0)
+      const diff = Math.round((new Date(iso + 'T00:00:00') - today) / 86400000)
+      if (diff < 0)   return 'bg-black text-white'
+      if (diff === 0) return 'bg-black text-white'
+      return 'bg-gray-200 text-gray-700'
     },
   },
 }
